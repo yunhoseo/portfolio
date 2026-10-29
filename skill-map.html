@@ -1,0 +1,582 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>스킬 배선도 · 서윤호</title><meta name="description" content="연구·개발 작업을 Claude Code 위에서 어떻게 자동화해 두었는지 보여주는 스킬 배선도. 요청이 훅과 2층 자동화, 1층 도구를 거쳐 외부 도구에 닿는 경로를 작업별로 점등합니다."><meta name="theme-color" content="#f5f3e9"><meta property="og:type" content="website"><meta property="og:locale" content="ko_KR"><meta property="og:title" content="스킬 배선도 · 서윤호"><meta property="og:description" content="Claude Code 스킬 68개가 어디서 왔고 어떤 순서로 호출되는지 한 장에 정리한 배선도."><link rel="icon" href="favicon.svg"><link rel="stylesheet" href="styles.css?v=20261026-framework"><link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700;800;900&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* 스킬 배선도 페이지 전용. 사이트 토큰(--paper·--ink·--green·--muted·--line·--mint)에 4열 색을 더한다. */
+.sm{--surface:#fcfbf3;--line-soft:#e6ebdf;--amber:#9a5a26;--amber-tint:#f5e8db;--teal:#2a6f7c;--teal-tint:#dcecee;--slate:#5f6b62;--slate-tint:#e8ede0;--off:#a3374a;--f-mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;--navy:var(--green);--navy-tint:var(--mint);display:flex;flex-direction:column;gap:56px;padding:48px max(6%,calc((100% - 1220px)/2)) 72px;font-family:'DM Sans','Noto Sans KR',sans-serif;font-size:16px;line-height:1.7}
+.sm h1{font-size:clamp(30px,3vw,42px);letter-spacing:-1.4px;line-height:1.35;margin:10px 0 0;white-space:normal}
+.sm h2{font-size:clamp(24px,2.4vw,32px);letter-spacing:-1px;line-height:1.4;margin:8px 0 0}
+.sm h3{font-size:16px;font-weight:700;margin:0;line-height:1.4}
+.sm p{margin:0}
+.sm .mono{font-family:var(--f-mono)}
+.sm .eyebrow{display:block;font-family:var(--f-mono);font-size:12px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);margin:0}
+.sm .lede{color:var(--muted);max-width:70ch;line-height:1.9}
+.sm section{display:flex;flex-direction:column;gap:18px}
+.sm .sec-head{display:flex;flex-direction:column;gap:6px}
+.sm header.page-head{display:flex;flex-direction:column;gap:14px;height:auto;position:static;border:0;padding:0;background:none;backdrop-filter:none;align-items:stretch}
+.sm .stats{display:flex;flex-wrap:wrap;gap:8px 28px;font-variant-numeric:tabular-nums;border-top:1px solid var(--line);padding-top:14px}
+.sm .stat{display:flex;align-items:baseline;gap:8px}
+.sm .stat b{font-family:var(--f-mono);font-size:22px;font-weight:600}
+.sm .stat span{color:var(--muted);font-size:14px}
+.sm .stat.warn b{color:var(--off)}
+.sm .path{display:grid;grid-template-columns:repeat(5,1fr);border:1px solid var(--line);border-radius:8px;background:var(--surface);overflow:hidden}
+.sm .path>div{padding:16px 18px;display:flex;flex-direction:column;gap:4px;border-right:1px solid var(--line)}
+.sm .path>div:last-child{border-right:0}
+.sm .path .n{font-family:var(--f-mono);font-size:12px;color:var(--muted)}
+.sm .path .t{font-weight:700}
+.sm .path .d{font-size:14px;color:var(--muted);line-height:1.7}
+.sm .path .k-h .t{color:var(--amber)} .sm .path .k-a .t{color:var(--green)} .sm .path .k-t .t{color:var(--teal)} .sm .path .k-x .t{color:var(--slate)}
+.sm .tasks{display:flex;flex-wrap:wrap;gap:8px}
+.sm .chip{font:inherit;font-size:14px;border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:8px 14px;border-radius:999px;cursor:pointer;display:inline-flex;gap:7px;align-items:center;min-height:40px}
+.sm .chip small{font-family:var(--f-mono);font-size:11px;color:var(--muted)}
+.sm .chip:hover{border-color:var(--green)}
+.sm .chip[aria-pressed="true"]{background:var(--green);border-color:var(--green);color:#fff}
+.sm .chip[aria-pressed="true"] small{color:#fff;opacity:.85}
+.sm .board-scroll{overflow-x:auto}
+.sm .board{position:relative;display:grid;grid-template-columns:repeat(4,minmax(210px,1fr));gap:44px;min-width:0}
+.sm .board svg{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:0;overflow:visible}
+.sm .col{position:relative;z-index:1;display:flex;flex-direction:column;gap:10px}
+.sm .col-head{display:flex;flex-direction:column;gap:2px;padding-bottom:6px;border-bottom:2px solid var(--c)}
+.sm .col-head .eyebrow{color:var(--c)}
+.sm .col-head h3{font-size:15px}
+.sm .col[data-k="h"]{--c:var(--amber);--tint:var(--amber-tint)}
+.sm .col[data-k="a"]{--c:var(--green);--tint:var(--mint)}
+.sm .col[data-k="t"]{--c:var(--teal);--tint:var(--teal-tint)}
+.sm .col[data-k="x"]{--c:var(--slate);--tint:var(--slate-tint)}
+.sm .node{font:inherit;text-align:left;color:inherit;background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:10px 12px;display:flex;flex-direction:column;gap:3px;cursor:pointer;transition:border-color .2s,background .2s}
+.sm .node>span{transition:opacity .2s}
+.sm .node .nm{font-family:var(--f-mono);font-size:13.5px;font-weight:600;line-height:1.4;word-break:break-word}
+.sm .node .role{font-size:13px;color:var(--muted);line-height:1.5}
+.sm .node:hover{border-color:var(--c)}
+.sm .board.lit .node:not(.on)>span{opacity:.38}
+.sm .board.lit .node:not(.on){border-color:var(--line-soft)}
+.sm .board.lit .node.on{border-color:var(--c);background:var(--tint);box-shadow:inset 3px 0 0 var(--c)}
+.sm .node.picked{outline:2px dashed var(--c);outline-offset:2px}
+.sm .node .pill{align-self:flex-start;font-family:var(--f-mono);font-size:11px;letter-spacing:.02em;color:var(--off);border:1px solid currentColor;border-radius:3px;padding:0 6px;margin-top:3px;line-height:1.6}
+.sm .node .pill.ok{color:var(--teal)}
+.sm .note{font-size:14px;color:var(--off);border-left:2px solid var(--off);padding-left:10px;max-width:72ch;line-height:1.7}
+.sm .extra{display:flex;flex-direction:column;gap:6px;margin-top:6px;padding-top:10px;border-top:1px dashed var(--line)}
+.sm .extra .eyebrow{font-size:11px}
+.sm .extra-list{display:flex;flex-wrap:wrap;gap:4px}
+.sm .extra-list span{font-family:var(--f-mono);font-size:12px;padding:2px 8px;border:1px solid var(--line-soft);border-radius:3px;color:var(--muted);background:var(--surface)}
+.sm path.edge{fill:none;stroke:var(--line);stroke-width:1.2;transition:stroke .2s,stroke-width .2s,opacity .2s}
+.sm .board.lit path.edge{opacity:.35}
+.sm .board.lit path.edge.on{opacity:1;stroke:var(--green);stroke-width:2.2}
+.sm .detail{display:grid;grid-template-columns:1.6fr 1fr;gap:20px;align-items:start}
+.sm .panel{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:22px 24px;display:flex;flex-direction:column;gap:14px}
+.sm .panel .trig{font-size:14px;color:var(--muted)}
+.sm .panel .trig q{color:var(--ink);font-style:normal}
+.sm ol.steps{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;counter-reset:s}
+.sm ol.steps li{counter-increment:s;display:grid;grid-template-columns:28px 1fr;gap:10px;padding:11px 0;border-top:1px solid var(--line-soft)}
+.sm ol.steps li:first-child{border-top:0;padding-top:0}
+.sm ol.steps li::before{content:counter(s);font-family:var(--f-mono);font-size:12px;color:var(--green);border:1px solid var(--green);border-radius:50%;width:22px;height:22px;display:grid;place-items:center;margin-top:2px}
+.sm ol.steps .s{font-family:var(--f-mono);font-size:13.5px;font-weight:700}
+.sm ol.steps .d{font-size:15px;color:var(--muted);line-height:1.75}
+.sm .info dl{margin:0;display:grid;grid-template-columns:auto 1fr;gap:6px 14px;font-size:14px}
+.sm .info dt{color:var(--muted);font-size:12px;padding-top:2px}
+.sm .info dd{margin:0;word-break:break-word}
+.sm .info .k{display:inline-block;font-family:var(--f-mono);font-size:11px;padding:1px 7px;border-radius:3px;border:1px solid currentColor}
+.sm .hint{font-size:14px;color:var(--muted)}
+.sm .tree{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+.sm .phase{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:18px;display:flex;flex-direction:column;gap:10px}
+.sm .phase .ph-n{font-family:var(--f-mono);font-size:12px;color:var(--green)}
+.sm .phase .ph-name{font-family:var(--f-mono);font-weight:700;font-size:15px}
+.sm .phase .ph-d{font-size:14px;color:var(--muted)}
+.sm .phase ul{list-style:none;margin:0;padding:0 0 0 12px;border-left:1px solid var(--line);display:flex;flex-direction:column;gap:5px}
+.sm .phase li{font-family:var(--f-mono);font-size:13px;position:relative}
+.sm .phase li::before{content:"";position:absolute;left:-12px;top:.75em;width:8px;border-top:1px solid var(--line)}
+.sm .phase li .par{color:var(--teal)}
+.sm .phase li em{font-style:normal;font-family:'DM Sans','Noto Sans KR',sans-serif;color:var(--muted);font-size:12.5px}
+.sm .phase ul ul{margin-top:4px}
+.sm .tree-root{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;font-size:15px}
+.sm .tree-root b{font-family:var(--f-mono);color:var(--green)}
+.sm .tbl{overflow-x:auto;border:1px solid var(--line);border-radius:8px;background:var(--surface)}
+.sm table{border-collapse:collapse;width:100%;font-size:14px;min-width:720px}
+.sm th,.sm td{text-align:left;vertical-align:top;padding:12px 14px;border-bottom:1px solid var(--line-soft)}
+.sm tr:last-child td{border-bottom:0}
+.sm th{font-family:var(--f-mono);font-size:11.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:500;background:var(--paper);white-space:nowrap}
+.sm td:first-child{width:250px}
+.sm td.num{font-family:var(--f-mono);font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap}
+.sm td .p{font-family:var(--f-mono);font-size:12px;color:var(--muted);overflow-wrap:anywhere}
+.sm td .names{font-family:var(--f-mono);font-size:12.5px;line-height:1.7}
+.sm .st{font-family:var(--f-mono);font-size:11px;padding:1px 7px;border-radius:3px;white-space:nowrap}
+.sm .st.on{color:var(--teal);background:var(--teal-tint)}
+.sm .st.off{color:var(--off);background:var(--slate-tint)}
+.sm .st.ext{color:var(--slate);background:var(--slate-tint)}
+.sm .off-names{color:var(--muted);text-decoration:line-through;text-decoration-color:var(--line)}
+.sm .sources{font-size:13px;color:var(--muted);border-top:1px solid var(--line);padding-top:14px;display:flex;flex-direction:column;gap:4px}
+.sm .back{font-size:14px;border-bottom:1px solid #a7b6a3;padding:6px 0;align-self:flex-start}
+@media (max-width:900px){.sm .path{grid-template-columns:1fr}.sm .path>div{border-right:0;border-bottom:1px solid var(--line)}.sm .path>div:last-child{border-bottom:0}.sm .detail{grid-template-columns:1fr}.sm .tree{grid-template-columns:1fr 1fr}}
+@media (max-width:760px){.sm{padding:36px 6% 48px;gap:40px}.sm .board{grid-template-columns:1fr;gap:28px}.sm .board svg{display:none}.sm .tree{grid-template-columns:1fr}.sm h1{font-size:28px}.sm .stat b{font-size:19px}}
+@media (prefers-reduced-motion:reduce){.sm *{transition:none!important}}
+</style></head>
+<body><a class="skip" href="#board">배선도로 바로 가기</a><header class="header"><a href="index.html#home" class="brand"><span class="brand-icon">y.</span> 서윤호 <span class="brand-en">YUNHO SEO</span></a><span class="header-note"><i></i> TOOLING / CLAUDE CODE WORKFLOW</span><nav class="desktop-nav" aria-label="메인 메뉴"><a href="index.html#evidence">Showcase</a><a href="index.html#work">Work</a><a href="index.html#research">Research</a><a href="index.html#about">About</a><a href="https://github.com/yunhoseo" target="_blank" rel="noopener">GitHub ↗</a><a class="nav-contact" href="index.html#contact">Contact ↗</a></nav><details class="mobile-menu"><summary>메뉴 <span aria-hidden="true">☰</span></summary><nav aria-label="모바일 메뉴"><a href="index.html#evidence">Showcase · 결과물</a><a href="index.html#work">Work · 프로젝트</a><a href="index.html#research">Research · 논문</a><a href="index.html#about">About · 소개</a><a href="https://github.com/yunhoseo" target="_blank" rel="noopener">GitHub ↗</a><a href="index.html#contact">Contact · 연락처</a></nav></details></header>
+<main class="sm">
+<header class="page-head">
+  <a class="back" href="index.html#open-research">← 공개 연구·도구로 돌아가기</a>
+  <p class="section-kicker">TOOLING / CLAUDE CODE WORKFLOW</p>
+  <h1>스킬 배선도</h1>
+  <p class="lede">연구와 개발 작업을 Claude Code 위에서 어떻게 자동화해 두었는지 한 장에 정리했습니다. 설치한 스킬이 어디서 왔고, 요청 한 줄이 어떤 훅을 거쳐 어느 스킬로 들어가 어떤 도구를 부르는지 보여 줍니다. 아래 작업을 고르면 그 경로만 점등됩니다.</p>
+  <span class="eyebrow">~/.claude · ~/.codex 실측 · 2026-10-29 기준</span>
+  <div class="stats">
+    <div class="stat"><b>68</b><span>Claude 등록 스킬</span></div>
+    <div class="stat"><b>67</b><span>Codex 등록 스킬</span></div>
+    <div class="stat"><b>10</b><span>켜진 플러그인 (꺼짐 17)</span></div>
+    <div class="stat"><b>8</b><span>2층 자동화</span></div>
+    <div class="stat"><b>13</b><span>1층 도구 묶음</span></div>
+    <div class="stat"><b>71</b><span>꺼 둔 스킬 (gstack 42 + 보관 29)</span></div>
+    <div class="stat warn"><b>1</b><span>작동 안 하는 연결 (research-pipeline 위임)</span></div>
+  </div>
+</header>
+
+<section>
+  <div class="sec-head">
+    <span class="eyebrow">요청 처리 순서</span>
+    <h2>요청이 스킬에 닿기까지</h2>
+  </div>
+  <div class="path">
+    <div><span class="n">1 · 입력</span><span class="t">사용자 요청</span><span class="d">"리서치해줘", "덱 고쳐줘" 같은 짧은 문장</span></div>
+    <div class="k-h"><span class="n">2 · 훅</span><span class="t">라우터가 신호를 붙임</span><span class="d">gptaku-core가 스킬 이름을, fablize가 검증 팩을 프롬프트에 덧붙임</span></div>
+    <div class="k-a"><span class="n">3 · 2층</span><span class="t">일 단위 자동화</span><span class="d">CLAUDE.md 규칙: 2층에 해당하면 2층 스킬부터 연다</span></div>
+    <div class="k-t"><span class="n">4 · 1층</span><span class="t">능력 단위 도구</span><span class="d">2층이 필요한 1층을 불러 쓴다. 단순 일은 1층만 바로 연다</span></div>
+    <div class="k-x"><span class="n">5 · 외부</span><span class="t">MCP · 앱 · CLI</span><span class="d">liner, Zotero, PowerPoint, Codex, 브라우저, 키 볼트, Supermemory · 독립 앱 Skales</span></div>
+  </div>
+</section>
+
+<section id="board-section">
+  <div class="sec-head">
+    <span class="eyebrow">작업을 고르면 경로가 점등됩니다 · 칸을 누르면 상세</span>
+    <h2>작업별 배선</h2>
+  </div>
+  <div class="tasks" id="tasks" role="group" aria-label="작업 선택"></div>
+  <div class="board-scroll">
+    <div class="board lit" id="board">
+      <svg id="wires" aria-hidden="true"></svg>
+    </div>
+  </div>
+  <div class="detail">
+    <div class="panel" id="taskPanel" aria-live="polite"></div>
+    <div class="panel info" id="nodePanel">
+      <h3>칸 상세</h3>
+      <p class="hint">배선도의 칸을 누르면 위치와 역할이 여기에 표시됩니다.</p>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="sec-head">
+    <span class="eyebrow">research-pipeline 내부</span>
+    <h2>논문 집필 파이프라인의 스킬 트리</h2>
+    <p class="lede">오케스트레이터(L0)는 직접 분석하거나 쓰지 않고 4개 단계 스킬로 넘깁니다. 같은 칸 안의 <span class="mono" style="color:var(--teal)">∥</span> 표시는 병렬로 돌릴 수 있는 묶음입니다. 전부 <span class="mono">~/.local/share/agent-skills</span>에 있고 <span class="mono">~/.claude/skills</span>에는 심볼릭 링크로 연결됩니다.</p>
+  </div>
+  <div class="tree-root"><b>research-pipeline</b><span class="hint">L0 · 가설 설계 → 분석 → 집필 → 리뷰·투고</span></div>
+  <p class="note">현재 상태: L0가 위임하는 하위 에이전트 7종(professor, research-designer, data-analyst, visual-designer, manuscript-writer, peer-reviewer, publisher)이 정의돼 있지 않아 위임 단계가 막혀 있습니다. 아래 단계 스킬은 모두 설치돼 있어 직접 부를 수 있습니다.</p>
+  <div class="tree">
+    <div class="phase">
+      <span class="ph-n">단계 1</span>
+      <span class="ph-name">hypothesis-design</span>
+      <span class="ph-d">공개 데이터 탐색, 가설 수립, 문헌 검증</span>
+      <ul>
+        <li>hypothesis-plan</li>
+        <li>eda
+          <ul>
+            <li><span class="par">∥</span> eda-distribution</li>
+            <li><span class="par">∥</span> eda-correlation</li>
+            <li><span class="par">∥</span> eda-survival</li>
+            <li>eda-report <em>종합</em></li>
+          </ul>
+        </li>
+        <li>hypothesis-validation <em>문헌 검토</em></li>
+      </ul>
+    </div>
+    <div class="phase">
+      <span class="ph-n">단계 2</span>
+      <span class="ph-name">analysis</span>
+      <span class="ph-d">통계 설계와 실행, 그림·표 제작</span>
+      <ul>
+        <li>analysis-plan</li>
+        <li>analysis-execution
+          <ul><li><span class="par">∥</span> analysis-hypothesis <em>가설별</em></li></ul>
+        </li>
+        <li>figure-table
+          <ul>
+            <li><span class="par">∥</span> design-figures</li>
+            <li><span class="par">∥</span> design-tables</li>
+            <li>design-captions</li>
+          </ul>
+        </li>
+      </ul>
+    </div>
+    <div class="phase">
+      <span class="ph-n">단계 3</span>
+      <span class="ph-name">writing</span>
+      <span class="ph-d">본문 전 섹션, 초록은 마지막</span>
+      <ul>
+        <li>write-intro</li>
+        <li>write-methods</li>
+        <li>write-results</li>
+        <li>write-discussion</li>
+        <li>write-conclusion</li>
+        <li>write-abstract <em>제목 후보 포함</em></li>
+      </ul>
+    </div>
+    <div class="phase">
+      <span class="ph-n">단계 4</span>
+      <span class="ph-name">review-submission</span>
+      <span class="ph-d">AI 동료 심사, 참고문헌, 투고 준비</span>
+      <ul>
+        <li>peer-review
+          <ul>
+            <li><span class="par">∥</span> review-domain</li>
+            <li><span class="par">∥</span> review-stats</li>
+            <li><span class="par">∥</span> review-novelty</li>
+            <li>review-report <em>종합</em></li>
+          </ul>
+        </li>
+        <li>reference-management
+          <ul>
+            <li><span class="par">∥</span> references-intro</li>
+            <li><span class="par">∥</span> references-methods</li>
+            <li><span class="par">∥</span> references-discussion</li>
+            <li>citation-manage <em>Endnote</em></li>
+          </ul>
+        </li>
+        <li>submission
+          <ul>
+            <li>select-journal</li>
+            <li>formatting-guideline</li>
+            <li>formatting-check</li>
+          </ul>
+        </li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="sec-head">
+    <span class="eyebrow">설치 출처</span>
+    <h2>스킬은 어디에 설치되어 있나</h2>
+  </div>
+  <div class="tbl">
+    <table>
+      <thead><tr><th>출처</th><th>상태</th><th>개수</th><th>들어 있는 것</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><b>공유 스킬 링크</b><div class="p">~/.local/share/agent-skills → Claude · Codex 심볼릭 링크</div></td>
+          <td><span class="st on">켜짐</span></td><td class="num">45</td>
+          <td><div class="names">research-pipeline 계열 39개 (위 트리) · archify · paper_sum · zotero-mcp-code · research-askback · hallmark 2.0.0 · remotion-best-practices 4.0.539</div><div class="p">45는 Claude 링크 수입니다. Codex는 총 66개 링크. Remotion은 11개 하위 REFERENCE를 포함한 등록 스킬 1개입니다.</div></td>
+        </tr>
+        <tr>
+          <td><b>기존 개인 스킬 폴더</b><div class="p">~/.claude/skills/&lt;이름&gt;</div></td>
+          <td><span class="st on">켜짐</span></td><td class="num">2</td>
+          <td><div class="names">lab-deck · deident</div></td>
+        </tr>
+        <tr>
+          <td><b>im-not-ai 한국어 윤문</b><div class="p">플랫폼별 공식 복사 설치</div></td>
+          <td><span class="st on">설치·게이트 확인</span></td><td class="num">4 / 1</td>
+          <td><div class="names">Claude: humanize-korean · humanize · humanize-scan · humanize-redo (4개). Codex: humanize-korean (1개).</div><div class="p">양쪽 파일은 공유 링크가 아닙니다. v2.3.2 · commit b37e0206d31f. Python 준비·게이트 양쪽 exit 0.</div></td>
+        </tr>
+        <tr>
+          <td><b>im-not-ai 전용 에이전트</b><div class="p">~/.claude/agents</div></td>
+          <td><span class="st on">정의 설치</span></td><td class="num">4</td>
+          <td><div class="names">humanize-monolith · humanize-diagnostician · humanize-finalizer · korean-ai-tell-taxonomist</div><div class="p">스킬 등록 수와 별도 집계합니다. research-pipeline의 미정의 에이전트 7종과는 다릅니다.</div></td>
+        </tr>
+        <tr>
+          <td><b>gstack</b><div class="p">~/.claude/skills/gstack (+ 링크 폴더)</div></td>
+          <td><span class="st on">켜짐</span></td><td class="num">17</td>
+          <td><div class="names">gstack · _gstack-command (라우터) · office-hours · plan-eng-review · review · qa · ship · retro · design-consultation · design-review · browse · cso · careful · freeze · guard · unfreeze · gstack-upgrade</div></td>
+        </tr>
+        <tr>
+          <td><b>gstack 꺼 둔 하위 스킬</b><div class="p">gstack-config get disabled_skills</div></td>
+          <td><span class="st off">꺼짐</span></td><td class="num">42</td>
+          <td><div class="names off-names">plan-ceo-review · plan-design-review (10/27 /doctor) · autoplan · investigate · codex · qa-only · spec · design-html · design-shotgun · diagram · document-release · land-and-deploy · canary · benchmark · health · learn · ios-* 5개 · context-save/restore · setup-* 4개 외</div></td>
+        </tr>
+        <tr>
+          <td><b>gptaku 플러그인</b><div class="p">~/.claude/plugins/cache/gptaku-plugins</div></td>
+          <td><span class="st on">켜짐</span></td><td class="num">8</td>
+          <td><div class="names">gptaku-core (라우터) · insane-research · insane-search · insane-review · docs-guide · pumasi · tikeytaka · ddiring</div></td>
+        </tr>
+        <tr>
+          <td><b>기타 플러그인</b><div class="p">~/.claude/plugins/cache</div></td>
+          <td><span class="st on">켜짐</span></td><td class="num">2</td>
+          <td><div class="names">fablize (검증 하네스) · codex (Codex CLI 위임)</div></td>
+        </tr>
+        <tr>
+          <td><b>꺼 둔 플러그인</b><div class="p">settings.json enabledPlugins = false</div></td>
+          <td><span class="st off">꺼짐</span></td><td class="num">17</td>
+          <td><div class="names off-names">dd (10/27 /doctor) · superpowers · bkit · ponytail · oh-my-claudecode · oh-my-fable · git-teacher · vibe-sunsang · show-me-the-prd · kkirikkiri · skillers-suda · nopal · insane-design · goaljaby · playmaker · gaseo · sangse</div></td>
+        </tr>
+        <tr>
+          <td><b>보관 스킬</b><div class="p">~/.claude/skills_disabled</div></td>
+          <td><span class="st off">꺼짐</span></td><td class="num">29</td>
+          <td><div class="names off-names">doc-coauthoring · reverse-engineer-anything (10/27 /doctor) · superpowers 계열 14개 (brainstorming · writing-plans · systematic-debugging · test-driven-development 외) · higgsfield-* 7개 · docx · pdf · pptx · xlsx · skill-creator (내장과 중복) · cate-theme</div></td>
+        </tr>
+        <tr>
+          <td><b>Anthropic 내장</b><div class="p">anthropic-skills:* · 기본 스킬</div></td>
+          <td><span class="st ext">기본</span></td><td class="num">—</td>
+          <td><div class="names">pptx · docx · xlsx · pdf · dataviz · artifact-design · claude-api · skill-creator · code-review · simplify · loop · schedule 외</div></td>
+        </tr>
+        <tr>
+          <td><b>기존 MCP 목록 (10/27)</b><div class="p">~/.claude.json · claude.ai 커넥터</div></td>
+          <td><span class="st ext">당시 확인</span></td><td class="num">10</td>
+          <td><div class="names">pycharm · rea (로컬) · liner · notebooklm · notion · claude-in-chrome · Gmail · Google Calendar · Google Drive · Claude Docs</div><div class="p">rea · pycharm · Google Calendar · Google Drive는 /mcp에서 직접 끄실 항목으로 남아 있습니다(10/27 확인 시점 켜짐).</div></td>
+        </tr>
+        <tr>
+          <td><b>Supermemory MCP</b><div class="p">Claude · Codex 양쪽 등록</div></td>
+          <td><span class="st on">양쪽 인증 완료</span></td><td class="num">1</td>
+          <td><div class="names">Codex OAuth 완료 · MCP 도구 22개 발견. Claude OAuth 완료 · Connected 확인. 재인증이 필요할 때: claude mcp login supermemory.</div><div class="p">명시한 기억 저장·조회 요청에 사용합니다. 계정과 space를 확인하며 기존 NotebookLM 기본 기억 라우팅을 유지합니다.</div></td>
+        </tr>
+        <tr>
+          <td><b>Skales 12.9.56</b><div class="p">/Applications/Skales.app</div></td>
+          <td><span class="st ext">설치 · 첫 실행 전</span></td><td class="num">1</td>
+          <td><div class="names">독립 앱. SHA · 서명 · 공증 확인 완료.</div><div class="p">Claude·Codex에 직접 MCP 도구를 추가하지 않습니다. 첫 실행 후 AI 제공자와 OS 권한 선택이 남아 있습니다.</div></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<div class="sources">
+  <span>근거: ~/.claude/CLAUDE.md「스킬 구조: 1층 도구 / 2층 자동화」(2026-10-29 설치 반영), ~/.claude/settings.json, installed_plugins.json, 각 SKILL.md, 플러그인 hooks.json.</span>
+  <span>2026-10-29 재집계: Claude 68 = 링크 45 + 폴더 23, Codex 67 = 링크 66 + 폴더 1 (숨김·synced 폴더 제외). 전용 에이전트·MCP·앱은 스킬 수에 포함하지 않습니다.</span>
+</div>
+</main>
+<footer><a class="brand" href="index.html#home"><span class="brand-icon">y.</span> 서윤호</a><span>데이터에서 현장으로. © 2026 Yunho Seo</span><a href="index.html#home">포트폴리오로 ↑</a></footer>
+<script>
+const NODES = {
+  h:{eyebrow:"항상 켜짐", title:"훅 · 규칙", items:[
+    {id:"h_claudemd", nm:"CLAUDE.md 규칙", role:"2층 우선 · 기억 라우팅", src:"~/.claude/CLAUDE.md", when:"매 세션 로드", desc:"2층 일이면 2층 스킬부터 연다는 원칙, 과거 맥락은 NotebookLM 'Claude Memory'부터 조회하고 Supermemory는 명시한 저장·조회 요청에 사용한다는 규칙, 서브에이전트 모델 라우팅 표가 들어 있습니다."},
+    {id:"h_gptaku", nm:"gptaku-core 라우터", role:"요청 신호 → gptaku 스킬 지정", src:"plugins/cache/gptaku-plugins/gptaku-core/0.2.1/hooks", when:"SessionStart · UserPromptSubmit · PostToolUse", desc:"세션 시작 때 '스킬 우선 규칙'을 넣고, 요청 문장에서 리서치·공식 문서·이미지·URL·API 키 신호를 찾아 해당 스킬을 먼저 부르게 합니다. WebFetch가 실패하면 fetch_fallback이 insane-search로 다시 열도록 안내합니다."},
+    {id:"h_fablize", nm:"fablize 라우터", role:"검증 팩 주입 · 목표 분할", src:"plugins/cache/fablize/fablize/2.0.0", when:"UserPromptSubmit", desc:"HTML·SVG·차트 같은 렌더 산출물 신호면 [fablize:grounding](렌더 → 관찰 → 수정), 디버깅·원인 불명 신호면 [fablize:investigation](재현 → 가설 3개 이상 → 증거)을 붙입니다. 2단계 이상 작업은 goals.py로 목표를 나누고 검증 증거 없이는 완료로 치지 않습니다."},
+    {id:"h_gstack", nm:"gstack 타임라인 훅", role:"세션 종료 시 기록", src:"skills/gstack/hosts/claude/hooks/timeline-stop-hook", when:"Stop", desc:"세션이 멈출 때 gstack 작업 타임라인을 남깁니다."},
+    {id:"h_notify", nm:"알림 훅 · ddiring", role:"대기·완료 알림", src:"settings.json Notification · ddiring 0.2.3", when:"Notification · Stop", desc:"권한 승인·입력 대기 때 Glass 소리를 냅니다. ddiring 플러그인은 작업 완료 알림(소리·볼륨·터미널 표시)을 담당하고 ddiring-config로 설정합니다."},
+    {id:"h_orca", nm:"Orca 에이전트 훅", role:"모든 이벤트 전달", src:"~/.orca/agent-hooks/claude-hook.sh", when:"전 이벤트", desc:"SessionStart부터 Stop까지 모든 이벤트를 Orca 앱으로 넘깁니다. 스킬 선택에는 관여하지 않습니다."}
+  ]},
+  a:{eyebrow:"2층", title:"일 단위 자동화", items:[
+    {id:"a_research", nm:"insane-research", role:"주제 리서치", src:"gptaku-plugins/insane-research 2.11.0", when:"\"리서치해줘\", \"비교 분석\", \"동향\"", desc:"멀티에이전트 딥리서치. 질문을 쪼개 여러 출처를 모으고 주장별로 확인해 보고서를 만듭니다. 하위: insane-research-main, -query(쿼리 빌더), -refs(레퍼런스 이미지 수집)."},
+    {id:"a_pipeline", nm:"research-pipeline", role:"논문 집필", warn:"위임 깨짐", src:"~/.local/share/agent-skills/research-pipeline", when:"가설 설계부터 투고까지 전 과정", desc:"4단계(hypothesis-design · analysis · writing · review-submission)를 차례로 맡기는 오케스트레이터입니다. 위임 대상 하위 에이전트 7종이 정의돼 있지 않아 오케스트레이터 실행은 막혀 있고, 지금은 단계 스킬을 직접 부르는 방식으로만 쓸 수 있습니다. 아래 트리 참조."},
+    {id:"a_papersum", nm:"paper_sum", role:"논문 요약", src:"~/.local/share/agent-skills/paper_sum", when:"논문 파일·텍스트가 주어질 때", desc:"산업공학 논문을 정해진 항목에 따라 한국어로 요약 정리합니다."},
+    {id:"a_labdeck", nm:"lab-deck", role:"발표자료", src:"~/.claude/skills/lab-deck", when:"\"발표자료\", \"덱\", \"ppt 고쳐줘\", \"미리보기\"", desc:"SOS Lab 덱의 생성·수정·미리보기·버전 저장. 대시 금지, 남색 굵게 강조 하나, 글 위주 장은 글머리표형, 렌더 확인 최소 1회, '반영해줘' 시 다음 v 번호로 저장."},
+    {id:"a_gstackflow", nm:"gstack 개발 흐름", role:"코드 리뷰 · 배포", src:"~/.claude/skills/gstack", when:"기능 기획부터 PR까지", desc:"/office-hours → /plan-eng-review → 구현 → /review → /qa → /ship, 마무리 /retro."},
+    {id:"a_design", nm:"gstack 디자인 흐름", role:"UI · 디자인", src:"~/.claude/skills/design-consultation · design-review", when:"디자인 시스템 수립, 화면 품질 점검", desc:"/design-consultation으로 미감·타이포·색·간격 체계를 정하고, /design-review로 화면을 보며 불일치와 AI 슬롭 패턴을 고칩니다(B 이상 목표)."},
+    {id:"a_askback", nm:"research-askback", role:"ResearchCat 프롬프트 20종", src:"~/.local/share/agent-skills/research-askback", when:"리서치캣 공식 프롬프트를 명시해 요청할 때", desc:"연구계획서, 선행연구 조사, 논문 섹션, 랩미팅·학회 발표, 포스터, 논문 리뷰 등 공식 한국어 프롬프트 20종 가운데 하나를 골라, 필수·선택 입력을 질문으로 받고 원문 규칙대로 끝까지 실행합니다. 2026-10-27 CLAUDE.md 표에 추가."},
+    {"id":"a_humanize","nm":"humanize-korean (im-not-ai)","role":"한국어 진단 · 윤문 · 검증","ok":"v2.3.2 · 게이트 확인","src":"~/.claude/skills/humanize* · ~/.claude/agents · ~/.codex/skills/humanize-korean","when":"AI 문체·번역투를 자연스러운 한국어로 다듬을 때","desc":"원문의 의미·수치·내용 앵커를 보존하며 light·standard·heavy 경로로 진단, 윤문, 검증합니다. Claude는 본체와 래퍼 3개 및 전용 에이전트 4종, Codex는 전용 스킬 1개를 공식 방식으로 따로 복사 설치했습니다. Python 준비·게이트 검증은 양쪽 exit 0. 전체 윤문 실행은 별도 작업입니다."}
+  ]},
+  t:{eyebrow:"1층", title:"능력 단위 도구", items:[
+    {id:"t_search", nm:"insane-search", role:"막힌 사이트 · 플랫폼 읽기", src:"gptaku-plugins/insane-search 0.17.3", when:"특정 URL·플랫폼, WebFetch 실패", desc:"X, 레딧, 유튜브 자막, 네이버, 쿠팡, 링크드인 등. yt-dlp, Jina Reader, 공개 API, curl_cffi, Playwright 실제 Chrome 순으로 시도합니다. 단순 검색은 WebSearch."},
+    {id:"t_browse", nm:"browse", role:"브라우저 조작 · 화면 QA", src:"~/.claude/skills/browse (gstack)", when:"/qa, /design-review 안에서, 또는 단독", desc:"실제 브라우저로 페이지를 열고 클릭·스크린샷·콘솔 오류 확인까지 합니다."},
+    {id:"t_docsguide", nm:"docs-guide", role:"공식 문서", src:"gptaku-plugins/docs-guide 1.4.6", when:"라이브러리·프레임워크 질문", desc:"llms.txt나 검색으로 공식 문서를 찾아 그 기준으로 답합니다. Claude 관련 문서는 claude-code-guide가 맡습니다."},
+    {id:"t_image", nm:"pumasi:image", role:"이미지 생성", src:"gptaku-plugins/pumasi 1.21.0", when:"썸네일·로고·포스터·일러스트", desc:"이미지 요청을 전부 받습니다. 같은 플러그인의 pumasi는 Codex 병렬 코딩용입니다."},
+    {id:"t_codex", nm:"codex · insane-review", role:"다른 모델 의견", src:"openai-codex/codex 1.0.1 · gptaku insane-review", when:"막혔을 때 2차 진단, 외부 검토", desc:"codex:rescue는 Codex CLI에 진단·구현을 맡깁니다. insane-review는 repomix로 코드를 묶어 GPT Pro 웹에 검토를 받아 옵니다."},
+    {id:"t_key", nm:"tikeytaka", role:"API 키 보관", src:"gptaku-plugins/tikeytaka", when:"키 등록·갱신·전파·검증", desc:"add · verify · sync · scan · list · use · requires. 키 값은 채팅으로 받지 않고, 죽은 키는 볼트에 넣지 않습니다."},
+    {id:"t_office", nm:"pptx · docx · xlsx · pdf", role:"문서 포맷", src:"anthropic-skills (내장)", when:"파일 읽기·쓰기", desc:"Office 문서와 PDF를 읽고 만듭니다. 보관 폴더의 같은 이름 스킬은 중복이라 꺼 두었습니다."},
+    {id:"t_zotero", nm:"zotero-mcp-code · citation-manage", role:"학술 검색 · 인용", ok:"10/27 복구", src:"~/.local/share/agent-skills · 라이브러리 ~/Desktop/Research/Attention_by_Tracking/zotero-code-execution", when:"참고문헌 검색, Endnote 정리", desc:"Zotero 라이브러리를 코드 실행으로 검색해 중복 제거·정렬합니다. 2026-10-27 다른 사람 경로(/Users/niyaro/…)를 이 컴퓨터 사본으로 고쳐 복구했고, 실제 검색에서 4건이 나왔습니다. 의미 검색은 라이브러리 사본에서 꺼져 있어 키워드·태그 검색으로 동작합니다. citation-manage는 Endnote 형식으로 정리합니다."},
+    {id:"t_deident", nm:"deident", role:"비식별화", src:"~/.claude/skills/deident", when:"외부 공유·Claude 투입 전", desc:"hwpx/docx/xlsx/pptx/pdf/hwp/md의 성명·기관·주민번호·과제번호를 로컬에서 가명([연구자A] 등)으로 바꾸고 검증합니다."},
+    {id:"t_viz", nm:"archify · dataviz", role:"다이어그램 · 차트", src:"agent-skills/archify · 내장 dataviz", when:"구조도, 흐름도, 차트, 대시보드", desc:"archify는 아키텍처·시퀀스·데이터 흐름도를 HTML+SVG로 만듭니다. dataviz는 차트 색·마크·배치 원칙입니다."},
+    {id:"t_safety", nm:"cso · careful · freeze · guard", role:"보안 · 안전", src:"gstack", when:"보안 감사, 위험 명령 전", desc:"/cso 보안 감사. /careful은 rm -rf·reset --hard·force-push 경고, /freeze는 편집 폴더 제한, /guard는 둘을 합친 것, /unfreeze로 해제."},
+    {"id":"t_hallmark","nm":"hallmark","role":"새 웹사이트 · 페이지 설계","ok":"2.0.0 · 설치","src":"~/.local/share/agent-skills/hallmark → Claude · Codex 링크","when":"새 웹 디자인, 또는 Hallmark를 명시한 redesign·audit","desc":"레이아웃·타이포·색·콘텐츠 위계를 정하고 브라우저 렌더와 sloplint로 점검합니다. 기존 디자인 수정에는 자동 적용하지 않으며, 사용자가 Hallmark를 명시할 때만 redesign·audit로 진입합니다. 기존 gstack 디자인 흐름과 용도를 나눕니다."},
+    {"id":"t_remotion","nm":"remotion-best-practices","role":"React 영상 제작 · Studio 미리보기","ok":"4.0.539 · 설치","src":"~/.local/share/agent-skills/remotion-best-practices → Claude · Codex 링크","when":"Remotion 영상·자막·지도·렌더 작업","desc":"등록 스킬 1개가 제작·마크업·지도·멀티미디어·상호작용·Studio·렌더·자막·SaaS·문서·업그레이드의 11개 하위 REFERENCE로 연결됩니다. 영상 요청은 프로젝트 준비 후 Studio 미리보기부터 열고, MP4 내보내기 등 명시 요청이 있을 때 렌더합니다. 실제 프로젝트 의존성 설치는 제작 시 진행합니다."}
+  ], extra:["pumasi (병렬 코딩 · codex와 겹침)","gstack-upgrade"]},
+  x:{eyebrow:"외부", title:"MCP · 앱 · CLI", items:[
+    {id:"x_liner", nm:"liner MCP", role:"웹 · 학술 검색", src:"claude.ai 커넥터", when:"리서치, 참고문헌", desc:"search_web · search_scholar · deep_research_agent 등."},
+    {id:"x_zotero", nm:"Zotero 라이브러리", role:"웹 API · 개인 문헌 DB", src:"zotero.org 웹 API (ZOTERO_API_KEY · ZOTERO_LIBRARY_ID, ~/.zshrc)", when:"zotero-mcp-code 검색 대상", desc:"웹 API로 접근하므로 Zotero 데스크톱 앱이 꺼져 있어도 검색됩니다. 키는 ~/.zshrc 환경 변수에서 읽습니다."},
+    {id:"x_ppt", nm:"PowerPoint · LibreOffice", role:"덱 렌더", src:"/Applications", when:"lab-deck 미리보기", desc:"PowerPoint AppleScript로 PDF를 내보내고, -9074로 거부되면 LibreOffice 격리 프로필로 변환합니다."},
+    {id:"x_codex", nm:"Codex CLI · GPT Pro 웹", role:"외부 모델", src:"codex CLI · 브라우저", when:"2차 진단, 외부 검토, 이미지", desc:"codex 플러그인과 pumasi가 Codex CLI를, insane-review가 GPT Pro 웹을 씁니다."},
+    {id:"x_browser", nm:"실제 브라우저", role:"웹 QA · Studio 미리보기", src:"브라우저 · gstack · claude-in-chrome", when:"QA, 막힌 사이트, Remotion Studio", desc:"gstack browse와 insane-search의 Playwright가 실제 브라우저를 띄웁니다. Hallmark는 구현 화면을 검증하고 Remotion은 프로젝트의 Studio 미리보기를 브라우저에서 엽니다."},
+    {id:"x_vault", nm:"중앙 키 볼트", role:"→ 프로젝트 .env", src:"tikeytaka", when:"키 전파", desc:"키를 한 곳에 두고 연결된 프로젝트 .env에 sync로 전파합니다."},
+    {id:"x_notebooklm", nm:"NotebookLM 'Claude Memory'", role:"과거 맥락 기억", src:"notebooklm MCP", when:"과거 결정이 필요할 때, wrap up", desc:"이전 결정·작업 이력을 질문으로 골라 옵니다. 하루 50 질의 한도. 'wrap up' 하면 세션 요약을 소스로 추가합니다."},
+    {"id":"x_supermemory","nm":"Supermemory MCP","role":"명시 요청한 기억 저장 · 조회","ok":"양쪽 OAuth 완료 · 연결 확인","src":"Claude · Codex MCP 등록 · Supermemory OAuth","when":"Supermemory에 저장·조회하라고 명시하고 계정·space를 정했을 때","desc":"Codex는 OAuth를 완료했고 MCP 도구 22개를 발견했습니다. Claude도 OAuth를 완료했고 claude mcp get supermemory에서 Connected를 확인했습니다. 재인증이 필요할 때는 claude mcp login supermemory를 사용합니다. 계정과 space를 확인해 요청한 기억만 저장·조회하며, 과거 맥락의 기본 조회는 기존 NotebookLM Claude Memory 규칙을 유지합니다."},
+    {"id":"x_skales","nm":"Skales","role":"독립 AI 데스크톱 앱","warn":"12.9.56 · 첫 실행 전","src":"/Applications/Skales.app","when":"Skales 앱에서 직접 작업할 때","desc":"SHA·서명·공증을 확인해 설치했습니다. Claude·Codex에 직접 MCP 기능을 추가하는 연결이 아니므로 다른 노드와 자동 호출선이 없습니다. 아직 실행하지 않았으며, 첫 실행에서 AI 제공자와 필요한 OS 권한을 선택해야 합니다."}
+  ]}
+};
+
+const EDGES = [
+  ["h_claudemd","a_humanize"],["h_claudemd","t_hallmark"],["h_claudemd","t_remotion"],["h_claudemd","x_supermemory"],
+  ["t_hallmark","x_browser"],["t_remotion","x_browser"],
+  ["h_claudemd","a_research"],["h_claudemd","a_pipeline"],["h_claudemd","a_papersum"],["h_claudemd","a_labdeck"],["h_claudemd","a_gstackflow"],["h_claudemd","a_design"],["h_claudemd","a_askback"],
+  ["h_claudemd","x_notebooklm"],
+  ["h_gptaku","a_research"],["h_gptaku","t_search"],["h_gptaku","t_docsguide"],["h_gptaku","t_image"],["h_gptaku","t_codex"],["h_gptaku","t_key"],
+  ["h_fablize","a_labdeck"],["h_fablize","t_viz"],
+  ["h_gstack","a_gstackflow"],
+  ["a_research","t_search"],["a_research","x_liner"],
+  ["a_pipeline","t_zotero"],["a_pipeline","t_office"],["a_pipeline","t_viz"],
+  ["a_papersum","t_office"],
+  ["a_labdeck","t_office"],["a_labdeck","t_viz"],
+  ["a_gstackflow","t_browse"],["a_gstackflow","t_codex"],["a_gstackflow","t_safety"],
+  ["a_design","t_browse"],
+  ["a_askback","t_office"],["a_askback","t_viz"],
+  ["t_search","x_browser"],["t_browse","x_browser"],["t_codex","x_codex"],["t_image","x_codex"],
+  ["t_zotero","x_zotero"],["t_zotero","x_liner"],["t_office","x_ppt"],["t_key","x_vault"]
+];
+
+const TASKS = [
+  {"id":"humanize","label":"한국어 윤문","tag":"2층","trig":"AI 문체·번역투를 고치거나 /humanize 요청","nodes":["h_claudemd","a_humanize"],"steps":[["입력·경로","원문을 보존하고 Python 준비 스크립트로 light·standard·heavy 경로를 정합니다."],["진단·윤문","humanize-korean이 경로에 맞춰 한국어 문체와 리듬을 다듬습니다. Claude에서는 전용 에이전트, Codex에서는 플랫폼별 지침을 사용합니다."],["게이트","의미·수치·인용 보존과 변경률을 확인합니다. /humanize-scan은 진단, /humanize-redo는 후속 윤문을 맡습니다."]]},
+  {"id":"hallmark","label":"새 웹 디자인","tag":"1층","trig":"새 페이지 제작 또는 Hallmark를 명시한 redesign·audit","nodes":["h_claudemd","t_hallmark","x_browser"],"steps":[["Hallmark","실제 콘텐츠·대상·사용 목적을 확인하고 새 화면의 디자인 방향을 정합니다."],["제작·렌더 검증","정한 체계로 구현하고 브라우저 렌더·sloplint 결과를 확인합니다."],["기존 디자인","일반 수정은 기존 디자인 시스템을 유지합니다. Hallmark 명시 요청일 때만 redesign·audit를 적용합니다."]]},
+  {"id":"remotion","label":"Remotion 영상","tag":"1층","trig":"React 영상·자막·지도 제작, MP4 내보내기","nodes":["h_claudemd","t_remotion","x_browser"],"steps":[["라우터","remotion-best-practices에서 작업에 필요한 하위 REFERENCE를 읽습니다."],["프로젝트·미리보기","실제 제작 시 필요한 프로젝트 의존성을 준비하고 Studio를 브라우저에 열어 작업 결과를 확인합니다."],["내보내기","렌더·MP4·내보내기를 명시한 경우에 영상 파일을 생성합니다."]]},
+  {"id":"supermemory","label":"Supermemory 기억","tag":"외부","trig":"Supermemory에 이 내용을 저장하거나 기억을 찾아 달라는 명시 요청","nodes":["h_claudemd","x_supermemory"],"steps":[["대상 확인","사용할 계정과 space, 저장·조회할 범위를 확인합니다."],["인증된 클라이언트에서 실행","Codex OAuth 완료·도구 22개 발견, Claude OAuth 완료·Connected 상태를 확인했습니다. 양쪽 클라이언트에서 요청한 기억을 저장·조회할 수 있습니다."],["기본 기억 규칙 유지","일반적인 과거 결정 조회는 NotebookLM Claude Memory를 먼저 확인합니다."]]},
+  {"id":"skales","label":"Skales 독립 앱","tag":"외부","trig":"Skales 앱에서 작업을 시작할 때","note":"설치 검증 완료. 아직 앱을 실행하지 않아 AI 제공자·OS 권한 설정이 남아 있습니다.","nodes":["x_skales"],"steps":[["직접 실행","/Applications/Skales.app을 실행합니다. Claude·Codex의 MCP 자동 호출선은 없습니다."],["초기 설정","앱에서 AI 제공자와 계정을 정하고 작업에 필요한 OS 권한을 선택합니다."]]},
+  {id:"paper", label:"논문 집필", tag:"2층", note:"현재 research-pipeline 오케스트레이터는 하위 에이전트 7종이 정의돼 있지 않아 위임 단계가 막혀 있습니다. 아래 단계 스킬을 직접 부르는 방식으로 씁니다.", trig:"가설부터 투고까지, 또는 \"Methods 써줘\"처럼 단계만", nodes:["h_claudemd","a_pipeline","t_zotero","t_office","t_viz","x_zotero","x_liner"], steps:[
+    ["hypothesis-design","hypothesis-plan으로 공개 데이터와 가설 후보를 찾고, eda(분포·상관·생존 병렬 → eda-report)로 확인한 뒤 hypothesis-validation으로 문헌 근거를 검토합니다."],
+    ["analysis","analysis-plan으로 통계 방법을 정하고 analysis-execution이 가설별 analysis-hypothesis를 병렬 실행합니다. figure-table이 그림·표·캡션을 만듭니다(dataviz 원칙)."],
+    ["writing","intro → methods → results → discussion → conclusion → abstract 순으로 manuscript/ 아래 Markdown 초안을 씁니다."],
+    ["review-submission","peer-review(domain·stats·novelty 병렬 → review-report), reference-management(단계 스킬은 WebSearch로 섹션별 문헌을 찾고, 내 라이브러리는 zotero-mcp-code로 검색 → citation-manage), submission(select-journal → formatting-guideline → formatting-check). 투고용 원고 변환은 docx."]
+  ]},
+  {id:"research", label:"주제 리서치", tag:"2층", trig:"\"○○ 리서치해줘\", \"동향 정리\", \"비교 분석\"", nodes:["h_gptaku","h_claudemd","a_research","t_search","x_liner","x_browser"], steps:[
+    ["gptaku-core 라우터","요청에서 리서치 신호를 찾아 insane-research-main을 먼저 열도록 지시를 붙입니다."],
+    ["insane-research","질문을 하위 질문으로 나누고 여러 에이전트가 출처를 모읍니다. 쿼리를 먼저 다듬고 싶으면 insane-research-query."],
+    ["insane-search · liner","막힌 사이트와 플랫폼은 insane-search(필요하면 실제 Chrome), 웹·학술 검색은 liner MCP가 맡습니다."],
+    ["보고서","주장별로 출처를 대조해 보고서로 정리합니다."]
+  ]},
+  {id:"sum", label:"논문 요약", tag:"2층", trig:"논문 PDF나 텍스트를 주며 \"요약해줘\"", nodes:["a_papersum","t_office"], steps:[
+    ["pdf","PDF에서 본문을 추출합니다."],
+    ["paper_sum","정해진 항목 틀에 맞춰 한국어로 요약하고 전문 용어는 풀어 씁니다."]
+  ]},
+  {id:"deck", label:"발표자료", tag:"2층", trig:"\"덱 고쳐줘\", \"슬라이드 만들어줘\", \"미리보기\"", nodes:["h_claudemd","h_fablize","a_labdeck","t_office","t_viz","x_ppt"], steps:[
+    ["시작 전","대상 덱의 최신 v 번호 파일을 찾고, 학위논문 덱이면 메모리의 이력을 먼저 읽습니다. 번호 없는 원본은 건드리지 않습니다."],
+    ["pptx","문구 규칙(대시 금지, 남색 굵게 하나, '폐색')과 레이아웃 규칙(글 위주 장은 » • – 글머리표형)으로 python-pptx 수정."],
+    ["dataviz","결과 그림을 matplotlib로 만듭니다. 국제학회 덱이면 그림 라벨은 영어."],
+    ["렌더 → 관찰","사본을 PowerPoint로 PDF 내보내기(실패 시 LibreOffice), 바뀐 장 PNG를 직접 보고 넘침·여백·대시 개수 점검. fablize grounding 팩도 이 루프를 요구합니다."],
+    ["저장","\"반영해줘\"를 들으면 다음 v 번호로 저장하고 덱 메모리에 변경 한 줄을 덧붙입니다."]
+  ]},
+  {id:"ship", label:"코드 리뷰 · 배포", tag:"2층", trig:"기능 기획, PR 준비, 배포", nodes:["h_claudemd","h_gstack","a_gstackflow","t_browse","t_codex","t_safety","x_browser","x_codex"], steps:[
+    ["/office-hours","무엇을 왜 만드는지 먼저 정리합니다."],
+    ["/plan-eng-review","구현 계획을 엔지니어링 관점에서 검토합니다."],
+    ["구현","위험한 명령(rm -rf, reset --hard, force-push) 전에는 /careful."],
+    ["/review → /qa","PR 직전 리뷰, 이어서 browse로 실제 화면·API를 확인하며 버그를 고칩니다. 막히면 codex로 2차 진단."],
+    ["/ship → /retro","테스트·VERSION·CHANGELOG·커밋·푸시·PR을 처리하고, 주간 회고로 마무리합니다."]
+  ]},
+  {id:"design", label:"UI · 디자인", tag:"2층", trig:"디자인 시스템 수립, 화면이 이상할 때", nodes:["a_design","t_browse","x_browser"], steps:[
+    ["/design-consultation","제품을 이해하고 미감·타이포·색·간격·모션 체계를 제안하며 미리보기를 만듭니다."],
+    ["구현","정한 체계대로 화면을 만듭니다."],
+    ["/design-review","browse로 스크린샷을 찍어 간격·위계·AI 슬롭 패턴을 찾고 바로 고칩니다. 목표는 B 이상."]
+  ]},
+  {id:"askback", label:"ResearchCat 프롬프트", tag:"2층", trig:"\"리서치캣 공식 프롬프트로 연구계획서 써줘\"처럼 명시할 때", nodes:["h_claudemd","a_askback","t_office","t_viz"], steps:[
+    ["작업 선택","공식 목록 20종(연구계획서, 선행연구 조사, 논문 섹션, 랩미팅·학회 발표, 포스터, 논문 리뷰 등)에서 요청에 맞는 원문을 고르고 본문 전체를 읽습니다."],
+    ["ask-back","원문의 필수·선택 입력을 질문으로 받습니다. 생략한 선택 입력에는 적용되는 공식 기본값을 알립니다."],
+    ["실행","원문의 검색 기준과 문단별 확인 절차를 지키며 산출물을 만듭니다. 문서·슬라이드·그림은 pptx·docx·dataviz 같은 1층을 씁니다."],
+    ["저장","기존 파일을 버전 증가 없이 덮어쓰지 않습니다."]
+  ]},
+  {id:"read", label:"링크 · 사이트 읽기", tag:"1층", trig:"URL을 주거나 레딧·유튜브·네이버 등 지정", nodes:["h_gptaku","t_search","x_browser"], steps:[
+    ["gptaku-core 라우터","특정 URL·플랫폼 신호면 insane-search를 지정합니다. WebFetch가 실패하면 fetch_fallback 훅이 다시 안내합니다."],
+    ["insane-search","사이트 WAF 프로필에 따라 yt-dlp → Jina Reader → 공개 API → curl_cffi → 모바일 URL → Playwright 실제 Chrome 순으로 시도합니다."]
+  ]},
+  {id:"verify", label:"디버깅 · 산출물 검증", tag:"훅", trig:"원인 모를 오류, HTML·차트·대시보드 제작", nodes:["h_fablize","h_claudemd","t_viz","t_browse"], steps:[
+    ["fablize 라우터","렌더 산출물 신호면 grounding 팩, 디버깅 신호면 investigation 팩을 프롬프트에 붙입니다."],
+    ["investigation","재현 → 경쟁 가설 3개 이상 → 가설별 증거 → 인과 사슬 → 수정 전후 확인 → 기각한 가설 보고."],
+    ["grounding","실제 렌더러에서 띄우고(browse 등) 화면을 보고 고친 뒤 다시 띄웁니다. 정적 검사는 관찰로 치지 않습니다."],
+    ["goals.py","2단계 이상 작업이면 목표를 나누고, --verify-cmd와 증거 없이는 완료 처리하지 않습니다."]
+  ]},
+  {id:"key", label:"API 키", tag:"1층", trig:"\"키 발급받았어\", \"키 동기화해줘\"", nodes:["h_gptaku","t_key","x_vault"], steps:[
+    ["tikeytaka:add","키 값을 채팅에 붙이지 않고 볼트에 등록합니다."],
+    ["tikeytaka:verify","실제 호출로 살아 있는지 확인합니다. 죽은 키는 넣지 않습니다."],
+    ["tikeytaka:sync","연결된 모든 프로젝트 .env에 전파합니다. 흩어진 키는 scan으로 모읍니다."]
+  ]},
+  {id:"image", label:"이미지 생성", tag:"1층", trig:"썸네일·로고·포스터·일러스트", nodes:["h_gptaku","t_image","x_codex"], steps:[
+    ["gptaku-core 라우터","이미지 신호면 pumasi:image를 지정합니다. '컴포넌트 만들어줘' 같은 코드 요청은 제외됩니다."],
+    ["pumasi:image","이미지를 생성합니다."]
+  ]},
+  {id:"deident", label:"비식별화", tag:"1층", trig:"\"개인정보 가려줘\", \"익명화\"", nodes:["t_deident"], steps:[
+    ["deident","문서를 로컬에서 읽어 성명·기관·주민번호·과제번호·기밀어를 가명으로 치환합니다."],
+    ["검증","치환 누락이 없는지 확인한 뒤에야 Claude 투입이나 외부 공유로 넘깁니다."]
+  ]}
+];
+
+const byId = {};
+const board = document.getElementById("board");
+const svg = document.getElementById("wires");
+
+for (const [k, col] of Object.entries(NODES)) {
+  const c = document.createElement("div");
+  c.className = "col"; c.dataset.k = k;
+  c.innerHTML = `<div class="col-head"><span class="eyebrow">${col.eyebrow}</span><h3>${col.title}</h3></div>`;
+  for (const n of col.items) {
+    const b = document.createElement("button");
+    b.type = "button"; b.className = "node"; b.id = n.id;
+    b.innerHTML = `<span class="nm">${n.nm}</span><span class="role">${n.role}</span>` +
+      (n.warn ? `<span class="pill">${n.warn}</span>` : n.ok ? `<span class="pill ok">${n.ok}</span>` : "");
+    b.addEventListener("click", () => showNode(n, k));
+    c.appendChild(b);
+    byId[n.id] = {el:b, data:n, k};
+  }
+  if (col.extra) {
+    const e = document.createElement("div");
+    e.className = "extra";
+    e.innerHTML = `<span class="eyebrow">표에 없는 1층</span><div class="extra-list">${col.extra.map(x=>`<span>${x}</span>`).join("")}</div>`;
+    c.appendChild(e);
+  }
+  board.appendChild(c);
+}
+
+const NS = "http://www.w3.org/2000/svg";
+const edgeEls = EDGES.map(([a,b]) => {
+  const p = document.createElementNS(NS, "path");
+  p.setAttribute("class","edge"); p.dataset.a = a; p.dataset.b = b;
+  svg.appendChild(p); return p;
+});
+
+function drawWires(){
+  const r0 = board.getBoundingClientRect();
+  svg.setAttribute("viewBox", `0 0 ${r0.width} ${r0.height}`);
+  for (const p of edgeEls) {
+    const A = byId[p.dataset.a].el.getBoundingClientRect();
+    const B = byId[p.dataset.b].el.getBoundingClientRect();
+    const x1 = A.right - r0.left, y1 = A.top + A.height/2 - r0.top;
+    const x2 = B.left - r0.left, y2 = B.top + B.height/2 - r0.top;
+    const dx = Math.max(30, (x2 - x1) * 0.45);
+    p.setAttribute("d", `M${x1},${y1} C${x1+dx},${y1} ${x2-dx},${y2} ${x2},${y2}`);
+  }
+}
+
+const KIND = {h:["훅 · 규칙","var(--amber)"], a:["2층 자동화","var(--navy)"], t:["1층 도구","var(--teal)"], x:["외부 연결","var(--slate)"]};
+function showNode(n, k){
+  document.querySelectorAll(".node.picked").forEach(e=>e.classList.remove("picked"));
+  byId[n.id].el.classList.add("picked");
+  const uses = TASKS.filter(t=>t.nodes.includes(n.id)).map(t=>t.label).join(" · ") || "직접 호출";
+  document.getElementById("nodePanel").innerHTML = `
+    <h3 class="mono">${n.nm}</h3>
+    <dl>
+      <dt>종류</dt><dd><span class="k" style="color:${KIND[k][1]}">${KIND[k][0]}</span></dd>
+      ${n.warn ? `<dt>상태</dt><dd><span class="k" style="color:var(--off)">${n.warn}</span></dd>` : n.ok ? `<dt>상태</dt><dd><span class="k" style="color:var(--teal)">${n.ok}</span></dd>` : ""}
+      <dt>역할</dt><dd>${n.role}</dd>
+      <dt>위치</dt><dd class="mono" style="font-size:12px">${n.src}</dd>
+      <dt>언제</dt><dd>${n.when}</dd>
+      <dt>쓰는 작업</dt><dd>${uses}</dd>
+    </dl>
+    <p style="font-size:14px">${n.desc}</p>`;
+}
+
+const chips = document.getElementById("tasks");
+for (const t of TASKS) {
+  const b = document.createElement("button");
+  b.type = "button"; b.className = "chip"; b.id = "task-" + t.id;
+  b.setAttribute("aria-pressed","false");
+  b.innerHTML = `${t.label}<small>${t.tag}</small>`;
+  b.addEventListener("click", () => selectTask(t.id));
+  chips.appendChild(b);
+}
+
+function selectTask(id){
+  const t = TASKS.find(x=>x.id===id);
+  chips.querySelectorAll(".chip").forEach(c=>c.setAttribute("aria-pressed", String(c.id==="task-"+id)));
+  const on = new Set(t.nodes);
+  for (const {el} of Object.values(byId)) el.classList.toggle("on", on.has(el.id));
+  for (const p of edgeEls) p.classList.toggle("on", on.has(p.dataset.a) && on.has(p.dataset.b));
+  document.getElementById("taskPanel").innerHTML = `
+    <div style="display:flex;flex-direction:column;gap:4px">
+      <span class="eyebrow">${t.tag === "훅" ? "훅이 주도" : t.tag + "에서 시작"}</span>
+      <h3 style="font-size:18px">${t.label}</h3>
+      <p class="trig">이럴 때: <q>${t.trig}</q></p>
+    </div>
+    ${t.note ? `<p class="note">${t.note}</p>` : ""}
+    <ol class="steps">${t.steps.map(([s,d])=>`<li><div><div class="s">${s}</div><div class="d">${d}</div></div></li>`).join("")}</ol>`;
+  try { localStorage.setItem("skillmap-task", id); } catch(e){}
+}
+
+let start = "paper";
+try { const s = localStorage.getItem("skillmap-task"); if (s && TASKS.some(t=>t.id===s)) start = s; } catch(e){}
+selectTask(start);
+showNode(byId.a_pipeline.data, "a");
+drawWires();
+new ResizeObserver(drawWires).observe(board);
+if (document.fonts) document.fonts.ready.then(drawWires);
+</script>
+</body></html>
