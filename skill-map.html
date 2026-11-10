@@ -115,7 +115,7 @@
   <p class="section-kicker">TOOLING / CLAUDE CODE WORKFLOW</p>
   <h1>스킬 배선도</h1>
   <p class="lede">연구와 개발 작업을 Claude Code 위에서 어떻게 자동화해 두었는지 한 장에 정리했습니다. 설치한 스킬이 어디서 왔고, 요청 한 줄이 어떤 훅을 거쳐 어느 스킬로 들어가 어떤 도구를 부르는지 보여 줍니다. 아래 작업을 고르면 그 경로만 점등됩니다.</p>
-  <span class="eyebrow">~/.claude · ~/.codex 실측 · 2026-10-29 기준</span>
+  <span class="eyebrow">~/.claude · ~/.codex 실측 · 2026-11-10 기준</span>
   <div class="stats">
     <div class="stat"><b>68</b><span>Claude 등록 스킬</span></div>
     <div class="stat"><b>67</b><span>Codex 등록 스킬</span></div>
@@ -137,7 +137,7 @@
     <div class="k-h"><span class="n">2 · 훅</span><span class="t">라우터가 신호를 붙임</span><span class="d">gptaku-core가 스킬 이름을, fablize가 검증 팩을 프롬프트에 덧붙임</span></div>
     <div class="k-a"><span class="n">3 · 2층</span><span class="t">일 단위 자동화</span><span class="d">CLAUDE.md 규칙: 2층에 해당하면 2층 스킬부터 연다</span></div>
     <div class="k-t"><span class="n">4 · 1층</span><span class="t">능력 단위 도구</span><span class="d">2층이 필요한 1층을 불러 쓴다. 단순 일은 1층만 바로 연다</span></div>
-    <div class="k-x"><span class="n">5 · 외부</span><span class="t">MCP · 앱 · CLI</span><span class="d">liner, Zotero, PowerPoint, Codex, 브라우저, 키 볼트, Supermemory · 독립 앱 Skales</span></div>
+    <div class="k-x"><span class="n">5 · 외부</span><span class="t">MCP · 앱 · CLI</span><span class="d">liner, Zotero, PowerPoint, Codex, 브라우저, 키 볼트, Supermemory, OpenAlex, arXiv, DuckDB, kordoc · 독립 앱 Skales</span></div>
   </div>
 </section>
 
@@ -326,6 +326,11 @@
           <td><div class="names">Codex OAuth 완료 · MCP 도구 22개 발견. Claude OAuth 완료 · Connected 확인. 재인증이 필요할 때: claude mcp login supermemory.</div><div class="p">명시한 기억 저장·조회 요청에 사용합니다. 계정과 space를 확인하며 기존 NotebookLM 기본 기억 라우팅을 유지합니다.</div></td>
         </tr>
         <tr>
+          <td><b>연구용 MCP (11/10)</b><div class="p">~/.claude.json · user 범위</div></td>
+          <td><span class="st on">3 연결 · 1 로그인 전</span></td><td class="num">4</td>
+          <td><div class="names">arxiv (uvx arxiv-mcp-server) · duckdb (uvx mcp-server-motherduck, 메모리 DB) · kordoc (npx kordoc-mcp 4.24.59) · openalex (공식 원격 서버, OAuth 로그인 전)</div><div class="p">출처는 「연구자를 위한 AI 도구 모음」(2026-11-10 기준)의 '먼저 등록해 볼 도구' 8개입니다. Playwright MCP(browse·Chrome과 중복), anthropics/skills(이미 내장), academic-research-skills(research-pipeline과 중복), scientific-agent-skills(177종, 목록 예산 초과)는 들이지 않았습니다.</div></td>
+        </tr>
+        <tr>
           <td><b>Skales 12.9.56</b><div class="p">/Applications/Skales.app</div></td>
           <td><span class="st ext">설치 · 첫 실행 전</span></td><td class="num">1</td>
           <td><div class="names">독립 앱. SHA · 서명 · 공증 확인 완료.</div><div class="p">Claude·Codex에 직접 MCP 도구를 추가하지 않습니다. 첫 실행 후 AI 제공자와 OS 권한 선택이 남아 있습니다.</div></td>
@@ -336,7 +341,7 @@
 </section>
 
 <div class="sources">
-  <span>근거: ~/.claude/CLAUDE.md「스킬 구조: 1층 도구 / 2층 자동화」(2026-10-29 설치 반영), ~/.claude/settings.json, installed_plugins.json, 각 SKILL.md, 플러그인 hooks.json.</span>
+  <span>근거: ~/.claude/CLAUDE.md「스킬 구조: 1층 도구 / 2층 자동화」(2026-11-10 MCP 4개 반영), ~/.claude.json, ~/.claude/settings.json, installed_plugins.json, 각 SKILL.md, 플러그인 hooks.json.</span>
   <span>2026-10-29 재집계: Claude 68 = 링크 45 + 폴더 23, Codex 67 = 링크 66 + 폴더 1 (숨김·synced 폴더 제외). 전용 에이전트·MCP·앱은 스킬 수에 포함하지 않습니다.</span>
 </div>
 </main>
@@ -385,12 +390,17 @@ const NODES = {
     {id:"x_vault", nm:"중앙 키 볼트", role:"→ 프로젝트 .env", src:"tikeytaka", when:"키 전파", desc:"키를 한 곳에 두고 연결된 프로젝트 .env에 sync로 전파합니다."},
     {id:"x_notebooklm", nm:"NotebookLM 'Claude Memory'", role:"과거 맥락 기억", src:"notebooklm MCP", when:"과거 결정이 필요할 때, wrap up", desc:"이전 결정·작업 이력을 질문으로 골라 옵니다. 하루 50 질의 한도. 'wrap up' 하면 세션 요약을 소스로 추가합니다."},
     {"id":"x_supermemory","nm":"Supermemory MCP","role":"명시 요청한 기억 저장 · 조회","ok":"양쪽 OAuth 완료 · 연결 확인","src":"Claude · Codex MCP 등록 · Supermemory OAuth","when":"Supermemory에 저장·조회하라고 명시하고 계정·space를 정했을 때","desc":"Codex는 OAuth를 완료했고 MCP 도구 22개를 발견했습니다. Claude도 OAuth를 완료했고 claude mcp get supermemory에서 Connected를 확인했습니다. 재인증이 필요할 때는 claude mcp login supermemory를 사용합니다. 계정과 space를 확인해 요청한 기억만 저장·조회하며, 과거 맥락의 기본 조회는 기존 NotebookLM Claude Memory 규칙을 유지합니다."},
-    {"id":"x_skales","nm":"Skales","role":"독립 AI 데스크톱 앱","warn":"12.9.56 · 첫 실행 전","src":"/Applications/Skales.app","when":"Skales 앱에서 직접 작업할 때","desc":"SHA·서명·공증을 확인해 설치했습니다. Claude·Codex에 직접 MCP 기능을 추가하는 연결이 아니므로 다른 노드와 자동 호출선이 없습니다. 아직 실행하지 않았으며, 첫 실행에서 AI 제공자와 필요한 OS 권한을 선택해야 합니다."}
+    {"id":"x_skales","nm":"Skales","role":"독립 AI 데스크톱 앱","warn":"12.9.56 · 첫 실행 전","src":"/Applications/Skales.app","when":"Skales 앱에서 직접 작업할 때","desc":"SHA·서명·공증을 확인해 설치했습니다. Claude·Codex에 직접 MCP 기능을 추가하는 연결이 아니므로 다른 노드와 자동 호출선이 없습니다. 아직 실행하지 않았으며, 첫 실행에서 AI 제공자와 필요한 OS 권한을 선택해야 합니다."},
+    {id:"x_openalex", nm:"OpenAlex MCP", role:"논문 · 인용 · 저자 · 기관 서지", warn:"11/10 등록 · 로그인 전", src:"https://mcp.openalex.org/mcp (공식 원격 서버, user 범위)", when:"인용 수·공저·기관별 집계, 서지 검색", desc:"OpenAlex 서지 DB를 설치 없이 주소만 등록해 씁니다. 2026-11-10 등록했고 OAuth 로그인이 남아 있습니다(claude mcp login openalex 또는 /mcp). 내 서재 검색은 zotero-mcp-code, 일반 학술 검색은 liner가 그대로 맡습니다."},
+    {id:"x_arxiv", nm:"arXiv MCP", role:"프리프린트 검색 · 원문 읽기", ok:"11/10 등록 · 연결 확인", src:"uvx arxiv-mcp-server (user 범위)", when:"arXiv 논문 검색, 원문 절 단위 읽기, BibTeX", desc:"arXiv를 검색하고 원문을 절 단위로 읽으며 BibTeX를 만듭니다. 2026-11-10 등록 후 Connected를 확인했습니다. 첫 실행은 패키지를 내려받느라 30초 제한에 걸릴 수 있습니다."},
+    {id:"x_duckdb", nm:"DuckDB MCP", role:"CSV · Parquet SQL 질의", ok:"11/10 등록 · 연결 확인", src:"uvx mcp-server-motherduck --db-path :memory: (user 범위)", when:"큰 표 데이터를 SQL로 집계·확인할 때", desc:"메모리 DuckDB로 CSV·Parquet·DB 파일에 SQL을 실행합니다. 2026-11-10 등록 후 Connected를 확인했습니다. 원본 데이터 폴더는 읽기 전용 규칙을 그대로 지키고, 결과는 파생 경로에 저장합니다."},
+    {id:"x_kordoc", nm:"kordoc MCP", role:"HWP · HWPX 읽기 · 편집", ok:"11/10 등록 · 연결 확인", src:"npx -y -p kordoc kordoc-mcp 4.24.59 (user 범위)", when:"한글 문서를 읽거나 서식을 지켜 고칠 때", desc:"HWP·HWPX·PDF를 Markdown으로 읽고, 서식을 보존해 편집하며, Markdown에서 HWPX를 만듭니다. 2026-11-10 등록 후 Connected를 확인했습니다. 대화형 setup 마법사 대신 MCP 서버를 직접 등록했습니다."}
   ]}
 };
 
 const EDGES = [
   ["h_claudemd","a_humanize"],["h_claudemd","t_hallmark"],["h_claudemd","t_remotion"],["h_claudemd","x_supermemory"],
+  ["h_claudemd","x_openalex"],["h_claudemd","x_arxiv"],["h_claudemd","x_duckdb"],["h_claudemd","x_kordoc"],
   ["t_hallmark","x_browser"],["t_remotion","x_browser"],
   ["h_claudemd","a_research"],["h_claudemd","a_pipeline"],["h_claudemd","a_papersum"],["h_claudemd","a_labdeck"],["h_claudemd","a_gstackflow"],["h_claudemd","a_design"],["h_claudemd","a_askback"],
   ["h_claudemd","x_notebooklm"],
@@ -413,6 +423,9 @@ const TASKS = [
   {"id":"hallmark","label":"새 웹 디자인","tag":"1층","trig":"새 페이지 제작 또는 Hallmark를 명시한 redesign·audit","nodes":["h_claudemd","t_hallmark","x_browser"],"steps":[["Hallmark","실제 콘텐츠·대상·사용 목적을 확인하고 새 화면의 디자인 방향을 정합니다."],["제작·렌더 검증","정한 체계로 구현하고 브라우저 렌더·sloplint 결과를 확인합니다."],["기존 디자인","일반 수정은 기존 디자인 시스템을 유지합니다. Hallmark 명시 요청일 때만 redesign·audit를 적용합니다."]]},
   {"id":"remotion","label":"Remotion 영상","tag":"1층","trig":"React 영상·자막·지도 제작, MP4 내보내기","nodes":["h_claudemd","t_remotion","x_browser"],"steps":[["라우터","remotion-best-practices에서 작업에 필요한 하위 REFERENCE를 읽습니다."],["프로젝트·미리보기","실제 제작 시 필요한 프로젝트 의존성을 준비하고 Studio를 브라우저에 열어 작업 결과를 확인합니다."],["내보내기","렌더·MP4·내보내기를 명시한 경우에 영상 파일을 생성합니다."]]},
   {"id":"supermemory","label":"Supermemory 기억","tag":"외부","trig":"Supermemory에 이 내용을 저장하거나 기억을 찾아 달라는 명시 요청","nodes":["h_claudemd","x_supermemory"],"steps":[["대상 확인","사용할 계정과 space, 저장·조회할 범위를 확인합니다."],["인증된 클라이언트에서 실행","Codex OAuth 완료·도구 22개 발견, Claude OAuth 완료·Connected 상태를 확인했습니다. 양쪽 클라이언트에서 요청한 기억을 저장·조회할 수 있습니다."],["기본 기억 규칙 유지","일반적인 과거 결정 조회는 NotebookLM Claude Memory를 먼저 확인합니다."]]},
+  {id:"scholar", label:"서지 · 프리프린트 검색", tag:"외부", trig:"인용 수·공저·기관 집계, arXiv 논문 찾기·원문 읽기", note:"OpenAlex는 등록만 된 상태로 OAuth 로그인이 남아 있습니다. arXiv는 연결 확인을 마쳤습니다.", nodes:["h_claudemd","x_openalex","x_arxiv"], steps:[["OpenAlex","논문·저자·기관·인용 관계를 서지 DB에서 조회합니다."],["arXiv","프리프린트를 검색하고 원문을 절 단위로 읽어 BibTeX를 만듭니다."],["기존 경로 유지","내 서재는 zotero-mcp-code, 일반 학술 검색은 liner, 찾은 문헌은 원문과 대조한 뒤 인용합니다."]]},
+  {id:"duckdb", label:"표 데이터 SQL 질의", tag:"외부", trig:"CSV·Parquet를 SQL로 집계하거나 확인할 때", nodes:["h_claudemd","x_duckdb"], steps:[["메모리 DB","파일을 복사하지 않고 DuckDB에서 바로 읽어 SQL을 실행합니다."],["원본 보호","원본 데이터 폴더는 읽기 전용으로 두고 결과는 파생 경로에 저장합니다."]]},
+  {id:"hwp", label:"한글 문서", tag:"외부", trig:"HWP·HWPX를 읽거나 고칠 때", nodes:["h_claudemd","x_kordoc"], steps:[["읽기","HWP·HWPX·PDF를 Markdown으로 변환해 내용을 확인합니다."],["편집·작성","서식을 보존한 채 고치거나 Markdown에서 HWPX를 만듭니다."]]},
   {"id":"skales","label":"Skales 독립 앱","tag":"외부","trig":"Skales 앱에서 작업을 시작할 때","note":"설치 검증 완료. 아직 앱을 실행하지 않아 AI 제공자·OS 권한 설정이 남아 있습니다.","nodes":["x_skales"],"steps":[["직접 실행","/Applications/Skales.app을 실행합니다. Claude·Codex의 MCP 자동 호출선은 없습니다."],["초기 설정","앱에서 AI 제공자와 계정을 정하고 작업에 필요한 OS 권한을 선택합니다."]]},
   {id:"paper", label:"논문 집필", tag:"2층", note:"현재 research-pipeline 오케스트레이터는 하위 에이전트 7종이 정의돼 있지 않아 위임 단계가 막혀 있습니다. 아래 단계 스킬을 직접 부르는 방식으로 씁니다.", trig:"가설부터 투고까지, 또는 \"Methods 써줘\"처럼 단계만", nodes:["h_claudemd","a_pipeline","t_zotero","t_office","t_viz","x_zotero","x_liner"], steps:[
     ["hypothesis-design","hypothesis-plan으로 공개 데이터와 가설 후보를 찾고, eda(분포·상관·생존 병렬 → eda-report)로 확인한 뒤 hypothesis-validation으로 문헌 근거를 검토합니다."],
