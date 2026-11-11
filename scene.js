@@ -1,4 +1,4 @@
-import * as T from './vendor/three.module.min.js?v=20261026-framework';
+import * as T from './vendor/three.module.min.js?v=20261112-dic2';
 export function initIsland(initialPaused, initialFocus=-1){
 const el=document.querySelector('#world');let paused=initialPaused,visible=true;
 let frameId=null,contextLost=false,last=performance.now();

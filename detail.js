@@ -1,5 +1,5 @@
-import {parseProjectHash} from './tour-state.js?v=20261026-framework';
-import {evidence, evidenceMarkup} from './evidence.js?v=20261026-framework';
+import {parseProjectHash} from './tour-state.js?v=20261112-dic2';
+import {evidence, evidenceMarkup} from './evidence.js?v=20261112-dic2';
 export function initDetails(projects, stopTour) {
   const dialog=document.querySelector('#detail');
   const ids=projects.map(p=>p.id);let renderedId=null,opener=null,pendingFocus=null;

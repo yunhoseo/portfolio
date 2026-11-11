@@ -1,7 +1,7 @@
-import {projects} from './data.js?v=20261026-framework';
-import {evidence,evidenceMarkup} from './evidence.js?v=20261026-framework';
-import {initTour} from './tour.js?v=20261026-framework';
-import {initDetails} from './detail.js?v=20261026-framework';
+import {projects} from './data.js?v=20261112-dic2';
+import {evidence,evidenceMarkup} from './evidence.js?v=20261112-dic2';
+import {initTour} from './tour.js?v=20261112-dic2';
+import {initDetails} from './detail.js?v=20261112-dic2';
 const $=s=>document.querySelector(s);
 document.querySelectorAll('[data-project-count]').forEach(el=>{el.textContent=String(projects.length)});
 // Native details keeps the mobile menu usable even before JavaScript loads.
@@ -36,4 +36,4 @@ $('#motion').onclick=()=>{paused=!paused;setMotion()};reduced.addEventListener('
 // Avoid simultaneous video playback, including videos opened in a detail dialog.
 document.addEventListener('play',e=>{if(e.target.tagName==='VIDEO')document.querySelectorAll('video').forEach(v=>{if(v!==e.target)v.pause()})},true);
 renderProjects();setMotion();
-import('./scene.js?v=20261026-framework').then(m=>m.initIsland(paused,tour.getActive())).catch(()=>{$('#motion').hidden=true;$('.map-labels').classList.add('fallback-labels');$('#island-caption').textContent='장소 버튼으로 프로젝트를 둘러보세요';});
+import('./scene.js?v=20261112-dic2').then(m=>m.initIsland(paused,tour.getActive())).catch(()=>{$('#motion').hidden=true;$('.map-labels').classList.add('fallback-labels');$('#island-caption').textContent='장소 버튼으로 프로젝트를 둘러보세요';});

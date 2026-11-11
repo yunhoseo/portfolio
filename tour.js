@@ -1,4 +1,4 @@
-import {activeChapter, chapterDestination} from './tour-state.js?v=20261026-framework';
+import {activeChapter, chapterDestination} from './tour-state.js?v=20261112-dic2';
 const names=['이상탐지 공장','디지털 트윈 랩','품질 검사실','비전 관측소'];
 export function initTour(projects) {
   const chapters=document.querySelector('#chapters');
